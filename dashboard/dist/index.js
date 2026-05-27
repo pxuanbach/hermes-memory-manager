@@ -15,6 +15,9 @@
   if (!SDK) return;
   var React = SDK.React;
   var h = React.createElement;
+  var hooks = SDK.hooks;
+  var useState = hooks.useState;
+  var useEffect = hooks.useEffect;
   var components = SDK.components;
   var Button = components.Button;
   var Separator = components.Separator;
