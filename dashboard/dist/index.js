@@ -65,8 +65,11 @@
     var setMsg = msgSt[1];
     var msg = msgSt[0];
 
-    // Load on mount
+    // Load when tab changes
     useEffect(function () {
+      setLoading(true);
+      setEditMode(false);
+      setMsg(null);
       apiRead(name)
         .then(function (d) {
           setContent(d.content || "");
@@ -76,7 +79,7 @@
           setMsg({ ok: false, msg: "Failed to load: " + String(e) });
           setLoading(false);
         });
-    }, []);
+    }, [name]);
 
     function handleEdit() {
       setEditMode(true);
