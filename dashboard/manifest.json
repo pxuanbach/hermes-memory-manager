@@ -1,0 +1,13 @@
+{
+  "name": "memory-manager",
+  "label": "Memory Manager",
+  "description": "View and edit Hermes persistent memory files — MEMORY.md and USER.md",
+  "icon": "Database",
+  "version": "1.0.0",
+  "tab": {
+    "path": "/memory-manager",
+    "position": "after:skills-manager"
+  },
+  "entry": "dist/index.js",
+  "api": "plugin_api.py"
+}
