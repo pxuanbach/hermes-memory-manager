@@ -43,7 +43,8 @@ MEMORY_FILES = ["MEMORY.md", "USER.md"]
 
 
 def _memory_path(name: str) -> Path:
-    """Return Path for a named memory file, without extension."""
+    """Return Path for a memory file. Accepts 'MEMORY', 'MEMORY.md', 'USER', 'USER.md'."""
+    name = name.replace(".md", "")  # strip any existing .md
     return MEMORY_DIR / f"{name}.md"
 
 
