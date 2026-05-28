@@ -2,10 +2,12 @@
  * Hermes Memory Manager — Dashboard Plugin
  *
  * View and edit Hermes persistent memory files: MEMORY.md and USER.md.
+ * Supports both default (~/.hermes/memories/) and per-profile memories
+ * (~/.hermes/profiles/<profile>/memories/).
  *
  * Plain IIFE, no build step. Uses window.__HERMES_PLUGIN_SDK__ for React +
  * shadcn primitives. Bundle is pre-built and the plugin_api.py backend
- * handles all file I/O against ~/.hermes/memories/.
+ * handles all file I/O.
  */
 
 (function () {
@@ -27,22 +29,52 @@
 
   // ── API ─────────────────────────────────────────────────────────────────────
 
-  function apiRead(name) {
-    return SDK.fetchJSON(API + "/files/" + encodeURIComponent(name));
+  function apiGetProfiles() {
+    return SDK.fetchJSON(API + "/profiles");
   }
 
-  function apiWrite(name, content) {
-    return SDK.fetchJSON(API + "/files/" + encodeURIComponent(name), {
+  function apiRead(name, profile) {
+    var url = API + "/files/" + encodeURIComponent(name) + (profile && profile !== "default" ? "?profile=" + encodeURIComponent(profile) : "");
+    return SDK.fetchJSON(url);
+  }
+
+  function apiWrite(name, content, profile) {
+    var url = API + "/files/" + encodeURIComponent(name) + (profile && profile !== "default" ? "?profile=" + encodeURIComponent(profile) : "");
+    return SDK.fetchJSON(url, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ content: content }),
     });
   }
 
+  // ── Profile Selector ────────────────────────────────────────────────────────
+
+  function ProfileSelector(props) {
+    var profiles = props.profiles;
+    var activeProfile = props.activeProfile;
+    var onChange = props.onChange;
+    var disabled = props.disabled;
+
+    return h("div", { className: "flex items-center gap-2" },
+      h("label", { className: "text-sm text-muted-foreground" }, "Profile:"),
+      h("select", {
+        className: "bg-background border border-input rounded px-3 py-1.5 text-sm",
+        value: activeProfile,
+        disabled: disabled,
+        onChange: function (e) { onChange(e.target.value); },
+      },
+        profiles.map(function (p) {
+          return h("option", { key: p, value: p }, p === "default" ? "Default" : p);
+        })
+      ),
+    );
+  }
+
   // ── Memory Tab ─────────────────────────────────────────────────────────────
 
   function MemoryTab(props) {
     var name = props.name;
+    var profile = props.profile;
     var onBack = props.onBack;
 
     var contentSt = useState("");
@@ -65,12 +97,12 @@
     var setMsg = msgSt[1];
     var msg = msgSt[0];
 
-    // Load when tab changes
+    // Load when tab or profile changes
     useEffect(function () {
       setLoading(true);
       setEditMode(false);
       setMsg(null);
-      apiRead(name)
+      apiRead(name, profile)
         .then(function (d) {
           setContent(d.content || "");
           setLoading(false);
@@ -79,7 +111,7 @@
           setMsg({ ok: false, msg: "Failed to load: " + String(e) });
           setLoading(false);
         });
-    }, [name]);
+    }, [name, profile]);
 
     function handleEdit() {
       setEditMode(true);
@@ -88,7 +120,7 @@
     function handleSave() {
       setSaving(true);
       setMsg(null);
-      apiWrite(name, content)
+      apiWrite(name, content, profile)
         .then(function () {
           setMsg({ ok: true, msg: "Saved successfully!" });
           setEditMode(false);
@@ -108,6 +140,9 @@
             h("span", { dangerouslySetInnerHTML: { __html: "&larr;" } }), " Back"
           ),
           h("h2", { className: "text-lg font-semibold" }, name + ".md"),
+          profile && profile !== "default" && h("span", { className: "text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded" },
+            "Profile: " + profile
+          ),
         ),
         h("div", { className: "flex items-center gap-2" },
           !editMode && h(Button, {
@@ -158,14 +193,50 @@
   // ── Main App ──────────────────────────────────────────────────────────────
 
   function MemoryManagerApp() {
+    var profilesSt = useState(["default"]);
+    var profiles = profilesSt[0];
+
+    var activeProfileSt = useState("default");
+    var activeProfile = activeProfileSt[0];
+
     var activeTabSt = useState("MEMORY");
     var activeTab = activeTabSt[0];
+
+    var profileLoadingSt = useState(true);
+    var profileLoading = profileLoadingSt[0];
+
+    // Load profile list on mount
+    useEffect(function () {
+      apiGetProfiles()
+        .then(function (d) {
+          profilesSt[1](d.profiles || ["default"]);
+          profileLoadingSt[1](false);
+        })
+        .catch(function () {
+          profileLoadingSt[1](false);
+        });
+    }, []);
 
     return h("div", { className: "p-6 max-w-5xl mx-auto h-full flex flex-col" },
       h("div", { className: "mb-4" },
         h("h1", { className: "text-xl font-bold mb-1" }, "Memory Manager"),
         h("p", { className: "text-sm text-muted-foreground" },
-          "View and edit your Hermes persistent memory files."
+          "View and edit persistent memory files across profiles."
+        ),
+      ),
+
+      // Profile selector row
+      h("div", { className: "flex items-center justify-between mb-4" },
+        h(ProfileSelector, {
+          profiles: profiles,
+          activeProfile: activeProfile,
+          onChange: function (p) { activeProfileSt[1](p); },
+          disabled: profileLoading,
+        }),
+        h("div", { className: "text-xs text-muted-foreground" },
+          activeProfile === "default"
+            ? "~/.hermes/memories/"
+            : "~/.hermes/profiles/" + activeProfile + "/memories/"
         ),
       ),
 
@@ -187,7 +258,7 @@
 
       // Tab content
       h("div", { className: "flex-1 overflow-auto" },
-        h(MemoryTab, { name: activeTab }),
+        h(MemoryTab, { name: activeTab, profile: activeProfile }),
       ),
     );
   }

@@ -1,17 +1,27 @@
 # Hermes Memory Manager
 
-A Hermes dashboard plugin for viewing and editing persistent memory files — MEMORY.md and USER.md.
+A Hermes dashboard plugin for viewing and editing persistent memory files — MEMORY.md and USER.md — across all profiles including the default.
 
 ## Features
 
-- **MEMORY tab**: View and edit `~/.hermes/memories/MEMORY.md`
-- **USER tab**: View and edit `~/.hermes/memories/USER.md`
-- Editable textarea with Save button to persist changes to disk
-- Success and error feedback messages
+- **Profile selector**: Dropdown to switch between `Default` and any profile under `~/.hermes/profiles/<profile>/memories/`
+- **MEMORY tab**: View and edit the MEMORY.md file for the selected profile
+- **USER tab**: View and edit the USER.md file for the selected profile
+- **Editable textarea** with Save button to persist changes to disk
+- **Success and error feedback** messages
+- **Path preview**: Shows the full path of the current memories directory
 
 ## Plugin Description
 
-Memory Manager provides a UI for managing Hermes persistent memory. It connects to a Python backend API (`/api/plugins/memory-manager/`) that handles file I/O operations against `~/.hermes/memories/`. The plugin runs as a tab inside the Hermes dashboard at `http://127.0.0.1:9119`.
+Memory Manager provides a UI for managing Hermes persistent memory across all profiles. It connects to a Python backend API (`/api/plugins/memory-manager/`) that handles file I/O operations against:
+- Default: `~/.hermes/memories/MEMORY.md` and `USER.md`
+- Per-profile: `~/.hermes/profiles/<profile>/memories/MEMORY.md` and `USER.md`
+
+The plugin runs as a tab inside the Hermes dashboard at `http://127.0.0.1:9119`.
+
+## How to Integrate with Hermes Dashboard
+
+The plugin is auto-discovered by the Hermes dashboard when placed in `~/.hermes/plugins/memory-manager/`.
 
 ## How to Integrate with Hermes Dashboard
 
